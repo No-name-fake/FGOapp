@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - FGO Strategy HUB</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Sans+JP:wght@400;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --accent: #ef4444;
+            --accent-blue: #3b82f6;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --border: #334155;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        header {
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            color: #f1f5f9;
+        }
+
+        .back-link {
+            color: #38bdf8;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        /* タブメニュー */
+        .admin-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+        }
+
+        .admin-tab {
+            padding: 10px 20px;
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-dim);
+            cursor: pointer;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .admin-tab.active {
+            background: var(--bg-card);
+            border-color: var(--border);
+            color: var(--text-main);
+        }
+
+        .admin-section {
+            display: none;
+        }
+
+        .admin-section.active {
+            display: block;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            padding: 30px;
+            border-radius: 16px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            display: block;
+            margin-top: 10px;
+        }
+
+        .stat-label {
+            color: var(--text-dim);
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.05em;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--bg-card);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        th,
+        td {
+            padding: 14px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: rgba(0, 0, 0, 0.2);
+            font-size: 0.8rem;
+            color: var(--text-dim);
+        }
+
+        .btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.75rem;
+            transition: opacity 0.2s;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #64748b;
+            color: white;
+        }
+
+        .btn:hover {
+            opacity: 0.8;
+        }
+
+        .badge {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+
+        .badge-admin {
+            background: #f59e0b;
+            color: black;
+        }
+
+        .badge-user {
+            background: #10b981;
+            color: white;
+        }
+
+        .action-zone {
+            background: rgba(239, 68, 68, 0.05);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 40px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Administrator Dashboard</h1>
+            <a href="/" class="back-link">← メイン画面に戻る</a>
+        </header>
+
+        <div class="admin-tabs">
+            <button class="admin-tab active" onclick="switchTab('dashboard')">ダッシュボード</button>
+            <button class="admin-tab" onclick="switchTab('users')">ユーザー管理</button>
+            <button class="admin-tab" onclick="switchTab('parties')">編成管理</button>
+            <button class="admin-tab" onclick="switchTab('owned')">所持データ管理</button>
+        </div>
+
+        <!-- Dashboard Section -->
+        <div id="section-dashboard" class="admin-section active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-label">登録ユーザー数</span>
+                    <span class="stat-value" id="stat-users">--</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">総所持データ数</span>
+                    <span class="stat-value" id="stat-owned">--</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">総編成登録数</span>
+                    <span class="stat-value" id="stat-parties">--</span>
+                </div>
+            </div>
+
+            <div class="action-zone">
+                <h2 style="font-size: 1.1rem; margin-top: 0;">Danger Zone</h2>
+                <p style="font-size: 0.9rem; color: var(--text-dim); margin-bottom: 15px;">
+                    全ユーザーの所持状況データをすべてリセットします。リセットしてもアカウント自体は残ります。
+                </p>
+                <button class="btn btn-danger" onclick="resetOwned()">全ユーザーの所持状況を完全消去</button>
+            </div>
+        </div>
+
+        <!-- Users Section -->
+        <div id="section-users" class="admin-section">
+            <h2 style="font-size: 1.2rem;">登録ユーザー一覧</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>ユーザー名</th>
+                        <th>権限</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="user-list">
+                    <tr>
+                        <td colspan="4" style="text-align:center">読み込み中...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Parties Section -->
+        <div id="section-parties" class="admin-section">
+            <h2 style="font-size: 1.2rem;">編成データ一覧 (全ユーザー)</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ユーザー</th>
+                        <th>編成名</th>
+                        <th>作成日時</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="party-list">
+                    <tr>
+                        <td colspan="4" style="text-align:center">読み込み中...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Owned Data Section -->
+        <div id="section-owned" class="admin-section">
+            <h2 style="font-size: 1.2rem;">所持データレコード一覧</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ユーザー</th>
+                        <th>サーヴァントID</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="owned-list">
+                    <tr>
+                        <td colspan="3" style="text-align:center">読み込み中...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(target) {
+            document.querySelectorAll('.admin-tab').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
+
+            // クリックされたボタンを active に
+            event.target.classList.add('active');
+            document.getElementById(`section-${target}`).classList.add('active');
+
+            if (target === 'dashboard') loadStats();
+            if (target === 'users') loadUsers();
+            if (target === 'parties') loadParties();
+            if (target === 'owned') loadOwnedRecords();
+        }
+
+        async function loadStats() {
+            const res = await fetch('/api/admin/stats');
+            const data = await res.json();
+            document.getElementById('stat-users').innerText = data.user_count;
+            document.getElementById('stat-owned').innerText = data.owned_count;
+            document.getElementById('stat-parties').innerText = data.party_count;
+        }
+
+        async function loadUsers() {
+            const res = await fetch('/api/admin/users');
+            const users = await res.json();
+            const list = document.getElementById('user-list');
+            list.innerHTML = '';
+
+            users.forEach(u => {
+                const tr = document.createElement('tr');
+                const badgeClass = u.is_admin ? 'badge-admin' : 'badge-user';
+                const badgeLabel = u.is_admin ? 'ADMIN' : 'USER';
+
+                tr.innerHTML = `
+                    <td>${u.id}</td>
+                    <td style="font-weight:bold">${u.username}</td>
+                    <td><span class="badge ${badgeClass}">${badgeLabel}</span></td>
+                    <td>
+                        <button class="btn btn-primary" onclick="toggleAdmin(${u.id})">権限切替</button>
+                        <button class="btn btn-danger" onclick="deleteUser(${u.id})">削除</button>
+                    </td>
+                `;
+                list.appendChild(tr);
+            });
+        }
+
+        async function loadParties() {
+            const res = await fetch('/api/admin/parties');
+            const parties = await res.json();
+            const list = document.getElementById('party-list');
+            list.innerHTML = '';
+
+            parties.forEach(p => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="color:var(--accent); font-weight:bold">${p.username || '不明'}</td>
+                    <td>${p.name}</td>
+                    <td style="font-size:0.8rem; color:var(--text-dim)">${p.created_at}</td>
+                    <td><button class="btn btn-danger" onclick="deleteParty(${p.id})">削除</button></td>
+                `;
+                list.appendChild(tr);
+            });
+        }
+
+        async function loadOwnedRecords() {
+            const res = await fetch('/api/admin/owned');
+            const records = await res.json();
+            const list = document.getElementById('owned-list');
+            list.innerHTML = '';
+
+            records.slice(0, 100).forEach(r => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="font-weight:bold">${r.username || '不明'}</td>
+                    <td>ID: ${r.id}</td>
+                    <td><button class="btn btn-danger" onclick="deleteOwnedRecord(${r.user_id}, ${r.id})">削除</button></td>
+                `;
+                list.appendChild(tr);
+            });
+            if (records.length > 100) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td colspan="3" style="text-align:center; color:var(--text-dim)">他 ${records.length - 100} 件...</td>`;
+                list.appendChild(tr);
+            }
+        }
+
+        // --- Actions ---
+        async function deleteUser(id) {
+            if (!confirm('このユーザーと全ての関連データを削除しますか？')) return;
+            const res = await fetch(`/api/admin/users/${id}`, { method: 'DELETE' });
+            if (res.ok) loadUsers();
+            else {
+                const err = await res.json();
+                alert(err.message || 'エラーが発生しました');
+            }
+        }
+
+        async function toggleAdmin(id) {
+            const res = await fetch(`/api/admin/users/${id}/toggle_admin`, { method: 'POST' });
+            if (res.ok) loadUsers();
+            else {
+                const err = await res.json();
+                alert(err.message || 'エラーが発生しました');
+            }
+        }
+
+        async function deleteParty(id) {
+            if (!confirm('この編成を削除しますか？')) return;
+            const res = await fetch(`/api/admin/parties/${id}`, { method: 'DELETE' });
+            if (res.ok) loadParties();
+        }
+
+        async function deleteOwnedRecord(userId, servant_id) {
+            if (!confirm('この所持記録を削除しますか？')) return;
+            const res = await fetch(`/api/admin/owned/${userId}/${servant_id}`, { method: 'DELETE' });
+            if (res.ok) loadOwnedRecords();
+        }
+
+        async function resetOwned() {
+            if (!confirm('本当にすべてのユーザーの所持状況をリセットしますか？')) return;
+            const res = await fetch('/api/admin/reset_owned', { method: 'POST' });
+            if (res.ok) {
+                alert('全ユーザーの所持状況をリセットしました');
+                loadStats();
+            }
+        }
+
+        // Initial Load
+        loadStats();
+    </script>
+</body>
+
+</html>

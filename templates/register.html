@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}新規登録{% endblock %}
+
+{% block content %}
+<div
+    style="max-width: 420px; margin: 40px auto; background: var(--bg-card); padding: 30px; border-radius: 12px; border: 1px solid var(--border);">
+    <h2 style="color: var(--accent); text-align: center; margin-bottom: 24px;">アカウント新規登録</h2>
+
+    {% if error %}
+    <div
+        style="color: #ef4444; background: rgba(239,68,68,0.1); padding: 10px; border-radius: 6px; margin-bottom: 20px; font-size: 0.9rem; text-align: center;">
+        {{ error }}
+    </div>
+    {% endif %}
+
+    <form method="POST" action="/register">
+        <div style="margin-bottom: 16px;">
+            <label style="display: block; margin-bottom: 6px; font-size: 0.9rem; color: #cbd5e1;">ユーザー名 <span
+                    style="color:#ef4444;">*</span></label>
+            <input type="text" name="username" required
+                style="width: 100%; padding: 10px; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 6px; color: white; box-sizing: border-box;"
+                placeholder="半角英数字で入力">
+        </div>
+        <div style="margin-bottom: 16px;">
+            <label style="display: block; margin-bottom: 6px; font-size: 0.9rem; color: #cbd5e1;">パスワード <span
+                    style="color:#ef4444;">*</span></label>
+            <input type="password" name="password" required
+                style="width: 100%; padding: 10px; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 6px; color: white; box-sizing: border-box;"
+                placeholder="6文字以上を推奨">
+        </div>
+        <div style="margin-bottom: 24px;">
+            <label style="display: block; margin-bottom: 6px; font-size: 0.9rem; color: #cbd5e1;">
+                メールアドレス
+                <span style="font-size: 0.75rem; color: var(--text-dim); margin-left: 8px;">任意｜パスワードリセットに使用します</span>
+            </label>
+            <input type="email" name="email"
+                style="width: 100%; padding: 10px; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 6px; color: white; box-sizing: border-box;"
+                placeholder="example@gmail.com">
+        </div>
+        <button type="submit"
+            style="width: 100%; padding: 12px; background: #3b82f6; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s;"
+            onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='#3b82f6'">登録する</button>
+    </form>
+
+    <div style="margin-top: 20px; text-align: center; font-size: 0.85rem;">
+        既にアカウントをお持ちの方は<a href="/login" style="color: var(--accent); text-decoration: underline;">ログイン</a>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const tabs = document.querySelector('.mode-tabs');
+        if (tabs) tabs.style.display = 'none';
+        const filters = document.querySelector('.filter-section');
+        if (filters) filters.style.display = 'none';
+        document.getElementById('nav-register').classList.add('active');
+    });
+</script>
+{% endblock %}

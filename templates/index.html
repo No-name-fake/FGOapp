@@ -1,0 +1,628 @@
+{% extends "base.html" %}
+
+{% block title %}パーティ編成{% endblock %}
+
+{% block head %}
+<style>
+    /* index.html 固有のレイアウトスタイル */
+    .party-editor {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        margin-bottom: 120px; /* パーティバーとの重なり防止 */
+    }
+
+    /* 編成メタ情報セクション */
+    .party-meta-section {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .meta-row {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+
+    .meta-field {
+        flex: 1;
+        min-width: 200px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .meta-field label {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--accent);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .char-hint {
+        font-size: 0.7rem;
+        color: var(--text-dim);
+        font-weight: normal;
+    }
+
+    .meta-field input,
+    .meta-field select {
+        background: var(--bg-dark);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: white;
+        padding: 10px;
+        font-size: 0.9rem;
+    }
+
+    .difficulty-row {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .diff-btns {
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+    }
+
+    .diff-btn {
+        background: #334155;
+        border: none;
+        border-radius: 4px;
+        color: white;
+        padding: 4px 8px;
+        font-size: 0.75rem;
+        cursor: pointer;
+    }
+
+    .diff-btn.star { color: #fbbf24; }
+
+    /* メモ欄 */
+    .memo-section {
+        margin-top: 16px;
+        border-top: 1px solid var(--border);
+        padding-top: 14px;
+    }
+
+    .memo-section textarea {
+        width: 100%;
+        min-height: 120px;
+        background: var(--bg-dark);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        color: white;
+        padding: 12px;
+        font-size: 0.95rem;
+        resize: vertical;
+        box-sizing: border-box;
+    }
+
+    .memo-counter {
+        text-align: right;
+        font-size: 0.78rem;
+        color: var(--text-dim);
+        margin-top: 4px;
+    }
+
+    /* マスタースキル・コスト */
+    .master-equip-section {
+        background: rgba(15, 23, 42, 0.6);
+        padding: 16px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        flex-wrap: wrap;
+    }
+
+    .total-cost-v2 {
+        font-weight: 800;
+        font-size: 1rem;
+        margin-left: auto;
+    }
+
+    .save-party-v2 {
+        background: var(--accent);
+        color: var(--bg-dark);
+        border: none;
+        padding: 10px 24px;
+        border-radius: 8px;
+        font-weight: 800;
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="party-editor">
+    <!-- ── 編成メタ情報 ── -->
+    <div class="party-meta-section">
+        <div class="meta-row">
+            <div class="meta-field">
+                <label>区分</label>
+                <select id="party-category">
+                    <option value="">選択なし</option>
+                    <option value="通常">通常</option>
+                    <option value="イベント">イベント</option>
+                    <option value="冠位戴冠戦">冠位戴冠戦</option>
+                </select>
+            </div>
+            <div class="meta-field">
+                <label>場所 <span class="char-hint">20字</span></label>
+                <input type="text" id="party-location" maxlength="20" placeholder="例: 冬木、アメリカ...">
+            </div>
+            <div class="meta-field">
+                <label>場所（詳細） <span class="char-hint">30字</span></label>
+                <input type="text" id="party-location-detail" maxlength="30" placeholder="例: 1-1、終局特異点...">
+            </div>
+        </div>
+        <div class="meta-row">
+            <div class="meta-field difficulty-field">
+                <label>難易度</label>
+                <div class="difficulty-row">
+                    <input type="text" id="party-difficulty" maxlength="20" placeholder="例: 90" style="width:100px">
+                    <div class="diff-btns">
+                        <button class="diff-btn" onclick="appendDiff('+')">+</button>
+                        <button class="diff-btn" onclick="appendDiff('++')">++</button>
+                        <button class="diff-btn" onclick="appendDiff('+++')">+++</button>
+                        <button class="diff-btn star" onclick="appendDiff('✰')">✰</button>
+                        <button class="diff-btn star" onclick="appendDiff('✰✰')">✰✰</button>
+                        <button class="diff-btn star" onclick="appendDiff('✰✰✰')">✰✰✰</button>
+                    </div>
+                </div>
+            </div>
+            <div class="meta-field name-field" style="flex: 2;">
+                <label>編成名 <span class="char-hint">必須</span></label>
+                <input type="text" id="party-name" maxlength="50" placeholder="編成名を入力...">
+            </div>
+        </div>
+    </div>
+
+    <!-- ── パーティスロット ── -->
+    <div class="party-grid-layout">
+        <div class="party-section-label">前衛メンバー</div>
+        {% for i in range(3) %}
+        <div class="party-slot-v2" id="slot-v2-{{i}}" onclick="focusSlot({{i}})">
+            <div class="slot-header">
+                <div class="servant-icon-main-container">
+                    <img src="" class="servant-icon-main" id="img-s-{{i}}" style="display:none">
+                    <span class="placeholder-icon" id="ph-s-{{i}}">+</span>
+                </div>
+                <div class="ce-icon-sub-container">
+                    <img src="" class="ce-icon-sub" id="img-c-{{i}}" style="display:none">
+                    <span class="placeholder-icon-ce" id="ph-c-{{i}}">CE</span>
+                </div>
+            </div>
+            <div class="slot-params">
+                <div class="param-row">
+                    <span class="param-label">宝具</span>
+                    <span class="np-level-badge" id="np-{{i}}" onclick="event.stopPropagation(); handleCycleNP({{i}})">1</span>
+                </div>
+                <div class="param-row">
+                    <span class="param-label">スキル</span>
+                    <div class="skill-levels">
+                        <span class="skill-val" id="sk-{{i}}-1" onclick="event.stopPropagation(); handleCycleSkill({{i}}, 1)">10</span>
+                        <span class="skill-val" id="sk-{{i}}-2" onclick="event.stopPropagation(); handleCycleSkill({{i}}, 2)">10</span>
+                        <span class="skill-val" id="sk-{{i}}-3" onclick="event.stopPropagation(); handleCycleSkill({{i}}, 3)">10</span>
+                    </div>
+                </div>
+            </div>
+            <button class="remove-btn" style="display:none" id="rem-{{i}}" onclick="event.stopPropagation(); clearSlot({{i}})">×</button>
+        </div>
+        {% endfor %}
+
+        <div class="party-section-label">控えメンバー</div>
+        {% for i in range(3, 6) %}
+        <div class="party-slot-v2" id="slot-v2-{{i}}" onclick="focusSlot({{i}})">
+            <div class="slot-header">
+                <div class="servant-icon-main-container">
+                    <img src="" class="servant-icon-main" id="img-s-{{i}}" style="display:none">
+                    <span class="placeholder-icon" id="ph-s-{{i}}">+</span>
+                </div>
+                <div class="ce-icon-sub-container">
+                    <img src="" class="ce-icon-sub" id="img-c-{{i}}" style="display:none">
+                    <span class="placeholder-icon-ce" id="ph-c-{{i}}">CE</span>
+                </div>
+            </div>
+            <div class="slot-params">
+                <div class="param-row">
+                    <span class="param-label">宝具</span>
+                    <span class="np-level-badge" id="np-{{i}}" onclick="event.stopPropagation(); handleCycleNP({{i}})">1</span>
+                </div>
+                <div class="param-row">
+                    <span class="param-label">スキル</span>
+                    <div class="skill-levels">
+                        <span class="skill-val" id="sk-{{i}}-1" onclick="event.stopPropagation(); handleCycleSkill({{i}}, 1)">10</span>
+                        <span class="skill-val" id="sk-{{i}}-2" onclick="event.stopPropagation(); handleCycleSkill({{i}}, 2)">10</span>
+                        <span class="skill-val" id="sk-{{i}}-3" onclick="event.stopPropagation(); handleCycleSkill({{i}}, 3)">10</span>
+                    </div>
+                </div>
+            </div>
+            <button class="remove-btn" style="display:none" id="rem-{{i}}" onclick="event.stopPropagation(); clearSlot({{i}})">×</button>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="master-equip-section">
+        <div class="mc-icon-container">
+            <img id="mc-face" src="" style="width: 50px; height: 50px; border-radius: 8px; border: 1px solid var(--border); display: none;">
+            <div id="mc-placeholder" style="width: 50px; height: 50px; border-radius: 8px; background: var(--bg-dark); border: 1px dotted var(--border); display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: var(--text-dim);">MC</div>
+        </div>
+        <div class="mc-info">
+            <label style="font-size: 0.75rem; color: var(--accent); font-weight: 700;">魔術礼装</label>
+            <select id="mystic-code-select" class="mystic-code-select" onchange="updateMCUI()">
+                <!-- JSで動的に生成 -->
+            </select>
+        </div>
+        <div class="mc-skills" id="mc-skills" style="display: flex; gap: 8px;">
+            <!-- JSでスキルアイコンを表示 -->
+        </div>
+        <div class="total-cost-v2">Total Cost: <span id="total-cost">0</span> / 114</div>
+        <button class="save-party-v2" id="save-party-btn">編成を保存</button>
+    </div>
+
+    <div class="memo-section">
+        <label for="party-memo">📝 メモ（攻略メモ・使い方など）</label>
+        <textarea id="party-memo" maxlength="1000" rows="6" placeholder="例: クエスト名、スキル発動順、ギミック対策など攻略メモを自由に入力..."></textarea>
+        <div class="memo-counter"><span id="memo-count">0</span> / 1000文字</div>
+    </div>
+</div>
+
+<div class="servant-grid" id="servant-grid"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // --- 状態管理用変数 ---
+    let currentServants = [null, null, null, null, null, null]; // 選択中のサーヴァント(6体分)
+    let currentCEs = [null, null, null, null, null, null];      // 選択中の概念礼装(6体分)
+    let currentSkills = [[10, 10, 10], [10, 10, 10], [10, 10, 10], [10, 10, 10], [10, 10, 10], [10, 10, 10]]; // スキルレベル
+    let currentNPs = [1, 1, 1, 1, 1, 1]; // 宝具レベル
+    let focusIndex = 0; // 現在選択操作の対象となっているスロット番号 (0-5)
+
+    // ページの初期化処理
+    async function onInit() {
+        // 検索やフィルタの変更時に描画を更新するように設定
+        setupFilters(() => renderGrid());
+        // 魔術礼装のプルダウン生成
+        initMysticCodeSelect();
+        // 初回描画
+        renderGrid();
+        // パーティ表示の更新
+        updatePartyUI();
+    }
+
+    /**
+     * 表示されているサーヴァント/礼装のリストを条件に合わせて描画する
+     */
+    function renderGrid() {
+        const grid = document.getElementById('servant-grid');
+        if (!grid) return;
+
+        // 検索ワードやフィルタの状態を取得
+        const search = document.getElementById('search-input').value.toLowerCase();
+        const rarityFilter = document.querySelector('#rarity-filter .active')?.dataset.val || 'all';
+        const classFilter = document.querySelector('#class-filter .active')?.dataset.val || 'all';
+        const ownedFilter = document.querySelector('#owned-filter .active')?.dataset.val || 'all';
+
+        grid.innerHTML = ''; // グリッドを一旦空にする
+
+        if (viewMode === 'servant') {
+            // サーヴァント表示モード
+            const filtered = allServantsMeta.filter(s => {
+                const isOwned = ownedIds.has(s.id);
+                // 所持状況フィルタ
+                if (ownedFilter === 'owned' && !isOwned) return false;
+                if (ownedFilter === 'not-owned' && isOwned) return false;
+                
+                // クラスフィルタ
+                if (classFilter !== 'all') {
+                    if (classFilter === 'beast') {
+                        if (!BEAST_CLASSES.includes(s.rawClass)) return false;
+                    } else if (s.rawClass !== classFilter) {
+                        return false;
+                    }
+                }
+                
+                // 検索ワードフィルタ
+                if (search && !s.name.toLowerCase().includes(search)) return false;
+                // レアリティフィルタ
+                if (rarityFilter === '5' && s.rarity !== 5) return false;
+                if (rarityFilter === '4' && s.rarity !== 4) return false;
+                if (rarityFilter === '3-1' && s.rarity > 3) return false;
+                return true;
+            });
+
+            // フィルタリングされたサーヴァントをカードとして生成
+            filtered.forEach(s => {
+                const isOwned = ownedIds.has(s.id);
+                const card = document.createElement('div');
+                card.className = `servant-card ${isOwned ? '' : 'not-owned'}`;
+                card.innerHTML = `
+                    <img src="${s.face}" alt="${s.name}" loading="lazy">
+                    <div class="rarity-badge">${'★'.repeat(s.rarity)}</div>
+                    <div class="servant-info">${s.name}</div>
+                `;
+                // クリックでパーティに追加、右クリックで詳細表示
+                card.onclick = () => addToParty(s);
+                card.oncontextmenu = (e) => { e.preventDefault(); showDetail(s.id); };
+                grid.appendChild(card);
+            });
+        } else {
+            // 概念礼装表示モード (viewMode === 'ce')
+            const filtered = allCEsMeta.filter(c => {
+                if (search && !c.name.toLowerCase().includes(search)) return false;
+                if (rarityFilter === '5' && c.rarity !== 5) return false;
+                if (rarityFilter === '4' && c.rarity !== 4) return false;
+                if (rarityFilter === '3-1' && c.rarity > 3) return false;
+                return true;
+            });
+
+            filtered.forEach(c => {
+                const card = document.createElement('div');
+                card.className = 'servant-card ce-card';
+                card.innerHTML = `
+                    <img src="${c.face}" loading="lazy">
+                    <div class="rarity-badge" style="color:#f472b6">${'★'.repeat(c.rarity)}</div>
+                    <div class="servant-info">${c.name}</div>
+                `;
+                card.onclick = () => addToParty(c);
+                card.oncontextmenu = (e) => { e.preventDefault(); showDetail(c.id); };
+                grid.appendChild(card);
+            });
+        }
+    }
+
+    // 操作対象のスロットを切り替える
+    function focusSlot(index) {
+        focusIndex = index;
+        updateFocusUI();
+    }
+
+    // スキルレベルを順次切り替えるハンドル
+    function handleCycleSkill(slotIdx, skillIdx) {
+        // cycleSkill は base.html で定義された共通関数を利用
+        currentSkills[slotIdx][skillIdx - 1] = cycleSkill(currentSkills[slotIdx][skillIdx - 1]);
+        document.getElementById(`sk-${slotIdx}-${skillIdx}`).innerText = currentSkills[slotIdx][skillIdx - 1];
+    }
+
+    // 宝具レベルを順次切り替えるハンドル
+    function handleCycleNP(slotIdx) {
+        // cycleNP は base.html で定義された共通関数を利用
+        currentNPs[slotIdx] = cycleNP(currentNPs[slotIdx]);
+        document.getElementById(`np-${slotIdx}`).innerText = currentNPs[slotIdx];
+    }
+
+    // グリッドから選択したアイテムをパーティに追加する
+    function addToParty(item) {
+        if (viewMode === 'servant') {
+            currentServants[focusIndex] = item;
+            // サーヴァント追加時は自動的に次のスロットへ（最大6枠まで）
+            if (focusIndex < 5) focusIndex++;
+        } else {
+            currentCEs[focusIndex] = item;
+        }
+        updatePartyUI();
+    }
+
+    // スロットの情報を空にする
+    function clearSlot(i) {
+        currentServants[i] = null;
+        currentCEs[i] = null;
+        updatePartyUI();
+    }
+
+    // 画面上のパーティ表示(6枠)を最新の状態に更新する
+    function updatePartyUI() {
+        for (let i = 0; i < 6; i++) {
+            const s = currentServants[i];
+            const c = currentCEs[i];
+            const sImg = document.getElementById(`img-s-${i}`);
+            const sPH = document.getElementById(`ph-s-${i}`);
+            const remBtn = document.getElementById(`rem-${i}`);
+
+            // サーヴァント画像の表示切り替え
+            if (sImg && sPH) {
+                if (s) {
+                    sImg.src = s.face; sImg.style.display = 'block'; sPH.style.display = 'none';
+                    if (remBtn) remBtn.style.display = 'block';
+                } else {
+                    sImg.style.display = 'none'; sPH.style.display = 'flex';
+                    if (remBtn) remBtn.style.display = 'none';
+                }
+            }
+
+            // 礼装画像の表示切り替え
+            const cImg = document.getElementById(`img-c-${i}`);
+            const cPH = document.getElementById(`ph-c-${i}`);
+            if (cImg && cPH) {
+                if (c) {
+                    cImg.src = c.face; cImg.style.display = 'block'; cPH.style.display = 'none';
+                } else {
+                    cImg.style.display = 'none'; cPH.style.display = 'flex';
+                }
+            }
+
+            // 宝具・スキルレベル表示の更新
+            const npEl = document.getElementById(`np-${i}`);
+            if (npEl) npEl.innerText = currentNPs[i];
+            for (let k = 1; k <= 3; k++) {
+                const skEl = document.getElementById(`sk-${i}-${k}`);
+                if (skEl) skEl.innerText = currentSkills[i][k - 1];
+            }
+        }
+        updateCost(); // コストの再計算
+        updateFocusUI(); // 選択枠の強調表示
+    }
+
+    // 現在操作中のスロットを強調する
+    function updateFocusUI() {
+        document.querySelectorAll('.party-slot-v2').forEach((el, idx) => {
+            el.classList.toggle('active', idx === focusIndex);
+        });
+    }
+
+    // パーティ全体の合計コストを計算して表示する
+    function updateCost() {
+        const total = currentServants.reduce((acc, s, i) => {
+            // sCostMap は base.html の定数を利用
+            const sCost = s ? (sCostMap[s.rarity] || 0) : 0;
+            const cCost = currentCEs[i] ? currentCEs[i].cost : 0;
+            return acc + sCost + cCost;
+        }, 0);
+        document.getElementById('total-cost').innerText = total;
+    }
+
+    // 魔術礼装の選択肢を生成
+    function initMysticCodeSelect() {
+        const select = document.getElementById('mystic-code-select');
+        if (!select) return;
+        
+        select.innerHTML = '<option value="">選択なし</option>';
+        allMysticCodesMeta.forEach(mc => {
+            const opt = document.createElement('option');
+            opt.value = mc.id;
+            opt.innerText = mc.name;
+            select.appendChild(opt);
+        });
+        updateMCUI();
+    }
+
+    // 魔術礼装が変更された際のUI更新
+    function updateMCUI() {
+        const select = document.getElementById('mystic-code-select');
+        const mcId = parseInt(select.value);
+        const mc = allMysticCodesMeta.find(m => m.id === mcId);
+        
+        const faceImg = document.getElementById('mc-face');
+        const ph = document.getElementById('mc-placeholder');
+        const skillContainer = document.getElementById('mc-skills');
+        
+        if (mc) {
+            faceImg.src = mc.extraAssets.item.male; // とりあえず男性用
+            faceImg.style.display = 'block';
+            ph.style.display = 'none';
+            
+            // スキル表示
+            skillContainer.innerHTML = '';
+            mc.skills.forEach(sk => {
+                const img = document.createElement('img');
+                img.src = sk.icon;
+                img.style.width = '32px';
+                img.style.height = '32px';
+                img.title = `${sk.name}: ${sk.detail}`;
+                img.style.cursor = 'help';
+                img.style.border = '1px solid var(--border)';
+                img.style.borderRadius = '4px';
+                skillContainer.appendChild(img);
+            });
+        } else {
+            faceImg.style.display = 'none';
+            ph.style.display = 'flex';
+            skillContainer.innerHTML = '';
+        }
+    }
+
+    // 難易度入力欄に文字列を追加する
+    function appendDiff(val) {
+        const input = document.getElementById('party-difficulty');
+        if (input) input.value += val;
+    }
+
+    // 保存ボタンのクリック処理 (API送信)
+    document.getElementById('save-party-btn').onclick = async () => {
+        const name = document.getElementById('party-name').value.trim();
+        if (!name) { showToast('⚠️ 編成名を入力してください', 'warn'); return; }
+
+        const category = document.getElementById('party-category').value;
+        const location = document.getElementById('party-location').value;
+        const location_detail = document.getElementById('party-location-detail').value;
+        const difficulty = document.getElementById('party-difficulty').value;
+        const memo = document.getElementById('party-memo')?.value || '';
+
+        try {
+            // Backend API にデータを送信
+            await fetch('/api/parties', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: name,
+                    servants: currentServants.map(s => s ? s.id : null),
+                    ces: currentCEs.map(c => c ? c.id : null),
+                    skills: currentSkills,
+                    nps: currentNPs,
+                    mystic_code: document.getElementById('mystic-code-select').selectedOptions[0]?.text || 'カルデア',
+                    mystic_code_id: parseInt(document.getElementById('mystic-code-select').value) || 1,
+                    memo: memo,
+                    category: category,
+                    location: location,
+                    location_detail: location_detail,
+                    difficulty: difficulty
+                })
+            });
+
+            // 保存完了後のリセット処理
+            ['party-name', 'party-location', 'party-location-detail', 'party-difficulty', 'party-memo'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+            const catSelect = document.getElementById('party-category');
+            if (catSelect) catSelect.selectedIndex = 0;
+            document.getElementById('memo-count').innerText = '0';
+
+            showToast('✅ 編成を保存しました！', 'success');
+        } catch (e) {
+            showToast('❌ 保存に失敗しました', 'error');
+        }
+    };
+
+    // メモ入力欄の文字数カウント表示
+    const memoEl = document.getElementById('party-memo');
+    if (memoEl) {
+        memoEl.addEventListener('input', () => {
+            document.getElementById('memo-count').innerText = memoEl.value.length;
+        });
+    }
+
+    /**
+     * 画面右下にスライドインするトースト通知を表示する
+     * @param {string} message 表示するメッセージ
+     * @param {'success'|'warn'|'error'} type 種別（色が変わる）
+     */
+    function showToast(message, type = 'success') {
+        const colors = { success: '#22c55e', warn: '#f59e0b', error: '#ef4444' };
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+            position: fixed; bottom: 28px; right: 28px;
+            background: ${colors[type] || colors.success}; color: white;
+            padding: 14px 22px; border-radius: 10px;
+            font-size: 0.95rem; font-weight: 700;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+            z-index: 10000; opacity: 0;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            transform: translateY(20px);
+        `;
+        toast.innerText = message;
+        document.body.appendChild(toast);
+        requestAnimationFrame(() => {
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateY(0)';
+        });
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(20px)';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+</script>
+{% endblock %}

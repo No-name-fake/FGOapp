@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}ログイン{% endblock %}
+
+{% block content %}
+<div
+    style="max-width: 400px; margin: 40px auto; background: var(--bg-card); padding: 30px; border-radius: 12px; border: 1px solid var(--border);">
+    <h2 style="color: var(--accent); text-align: center; margin-bottom: 24px;">ログイン</h2>
+
+    {% if error %}
+    <div
+        style="color: #ef4444; background: rgba(239, 68, 68, 0.1); padding: 10px; border-radius: 6px; margin-bottom: 20px; font-size: 0.9rem; text-align: center;">
+        {{ error }}
+    </div>
+    {% endif %}
+
+    {% if request.args.get('success') %}
+    <div
+        style="color: #10b981; background: rgba(16, 185, 129, 0.1); padding: 10px; border-radius: 6px; margin-bottom: 20px; font-size: 0.9rem; text-align: center;">
+        {{ request.args.get('success') }}
+    </div>
+    {% endif %}
+
+    <form method="POST" action="/login">
+        <div style="margin-bottom: 16px;">
+            <label style="display: block; margin-bottom: 6px; font-size: 0.9rem; color: #cbd5e1;">ユーザー名</label>
+            <input type="text" name="username" required
+                style="width: 100%; padding: 10px; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 6px; color: white;">
+        </div>
+        <div style="margin-bottom: 24px;">
+            <label style="display: block; margin-bottom: 6px; font-size: 0.9rem; color: #cbd5e1;">パスワード</label>
+            <input type="password" name="password" required
+                style="width: 100%; padding: 10px; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 6px; color: white;">
+        </div>
+        <button type="submit"
+            style="width: 100%; padding: 12px; background: var(--accent); color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">ログイン</button>
+    </form>
+
+    <div style="margin-top: 20px; text-align: center; font-size: 0.85rem;">
+        アカウントをお持ちでない方は<a href="/register" style="color: var(--accent); text-decoration: underline;">新規登録</a>
+    </div>
+    <div style="margin-top: 10px; text-align: center; font-size: 0.82rem;">
+        <a href="/forgot-password" style="color: var(--text-dim); text-decoration: underline;">パスワードを忘れた方はこちら</a>
+    </div>
+    <div style="margin-top: 14px; text-align: center; font-size: 0.82rem;">
+        <a href="/contact" style="color: var(--text-dim); text-decoration: underline;">お問い合わせ</a>
+    </div>
+</div>
+
+<script>
+    // ログイン画面ではタブ・フィルターを非表示
+    document.addEventListener("DOMContentLoaded", () => {
+        const tabs = document.querySelector('.mode-tabs');
+        if (tabs) tabs.style.display = 'none';
+        const filters = document.querySelector('.filter-section');
+        if (filters) filters.style.display = 'none';
+        document.getElementById('nav-login').classList.add('active');
+    });
+</script>
+{% endblock %}

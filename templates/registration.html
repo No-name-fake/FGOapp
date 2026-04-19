@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}所持登録{% endblock %}
+
+{% block content %}
+<div class="servant-grid" id="servant-grid"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    /**
+     * 所持登録ページの初期化
+     */
+    async function onInit() {
+        // 検索やフィルタの変更時に描画を更新するように設定
+        setupFilters(() => renderGrid());
+        // 初回描画
+        renderGrid();
+    }
+
+    /**
+     * サーヴァントリストをグリッド形式で描画する
+     */
+    function renderGrid() {
+        const grid = document.getElementById('servant-grid');
+        if (!grid) return;
+
+        const search = document.getElementById('search-input').value.toLowerCase();
+        const rarityFilter = document.querySelector('#rarity-filter .active')?.dataset.val || 'all';
+        const classFilter = document.querySelector('#class-filter .active')?.dataset.val || 'all';
+        const ownedFilter = document.querySelector('#owned-filter .active')?.dataset.val || 'all';
+
+        grid.innerHTML = '';
+
+        // サーヴァントのフィルタリング
+        const filtered = allServantsMeta.filter(s => {
+            const isOwned = ownedIds.has(s.id);
+            // 所持/未所持での絞り込み
+            if (ownedFilter === 'owned' && !isOwned) return false;
+            if (ownedFilter === 'not-owned' && isOwned) return false;
+            
+            // クラスでの絞り込み
+            if (classFilter !== 'all') {
+                if (classFilter === 'beast') {
+                    if (!BEAST_CLASSES.includes(s.rawClass)) return false;
+                } else if (s.rawClass !== classFilter) {
+                    return false;
+                }
+            }
+            
+            // 名前・レアリティでの絞り込み
+            if (search && !s.name.toLowerCase().includes(search)) return false;
+            if (rarityFilter === '5' && s.rarity !== 5) return false;
+            if (rarityFilter === '4' && s.rarity !== 4) return false;
+            if (rarityFilter === '3-1' && s.rarity > 3) return false;
+            return true;
+        });
+
+        // カードの生成と配置
+        filtered.forEach(s => {
+            const isOwned = ownedIds.has(s.id);
+            const card = document.createElement('div');
+            // 未所持の場合は CSS で半透明などにするためのクラスを付与
+            card.className = `servant-card ${isOwned ? '' : 'not-owned'}`;
+            card.innerHTML = `
+                <img src="${s.face}" alt="${s.name}" loading="lazy">
+                <div class="rarity-badge">${'★'.repeat(s.rarity)}</div>
+                <div class="servant-info">${s.name}</div>
+            `;
+            
+            // クリックで所持状態を反転
+            // (ShiftやCtrlを押しながらクリックした場合は詳細モーダル表示)
+            card.onclick = (e) => {
+                if (e.shiftKey || e.ctrlKey) {
+                    showDetail(s.id);
+                } else {
+                    toggleOwned(s.id, card);
+                }
+            };
+
+            // 右クリックで詳細を表示
+            card.oncontextmenu = (e) => {
+                e.preventDefault();
+                showDetail(s.id);
+            };
+
+            grid.appendChild(card);
+        });
+    }
+
+    /**
+     * サーバーに所持情報を保存し、表示を更新する
+     * @param {number} id サーヴァントID
+     * @param {HTMLElement} el カードの要素
+     */
+    async function toggleOwned(id, el) {
+        const currentlyOwned = ownedIds.has(id);
+        const newState = !currentlyOwned;
+        
+        try {
+            // API に所持状態の変更を通知
+            const res = await fetch('/api/owned', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: id, owned: newState })
+            });
+
+            if (!res.ok) throw new Error('保存失敗');
+
+            // ローカルの状態（Set）を更新
+            if (newState) {
+                ownedIds.add(id);
+            } else {
+                ownedIds.delete(id);
+            }
+
+            // 表示上のクラスを切り替えて見た目を更新
+            el.classList[newState ? 'remove' : 'add']('not-owned');
+            
+        } catch (e) {
+            console.error("所持情報の更新に失敗しました:", e);
+            alert('保存に失敗しました。再試行してください。');
+        }
+    }
+</script>
+{% endblock %}
