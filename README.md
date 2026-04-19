@@ -1,4 +1,4 @@
-# FGO Party Manager
+# FGO編成管理アプリ
 
 > [!NOTE]
 > **本プロジェクトの目的について**
