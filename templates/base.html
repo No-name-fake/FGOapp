@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}FGO戦略支援ツール{% endblock %} - Strategy HUB</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Sans+JP:wght@400;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+    {% block head %}{% endblock %}
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Strategy HUB / FGO</h1>
+            <nav id="main-nav">
+                {% if g.user %}
+                <a href="/" id="nav-index">パーティ編成</a>
+                <a href="/parties" id="nav-parties">編成一覧</a>
+                <a href="/registration" id="nav-registration">所持登録</a>
+                <a href="/mypage" id="nav-mypage">マイページ</a>
+                {% if g.user.is_admin %}
+                <a href="/admin" class="admin-link">Admin</a>
+                {% endif %}
+                <a href="/logout" id="nav-logout" style="color:#ef4444;">ログアウト</a>
+                {% else %}
+                <a href="/login" id="nav-login">ログイン</a>
+                <a href="/register" id="nav-register">新規登録</a>
+                {% endif %}
+            </nav>
+        </header>
+
+        <div class="mode-tabs">
+            <button class="mode-tab active" id="tab-servant" onclick="setMode('servant')">サーヴァント</button>
+            <button class="mode-tab" id="tab-ce" onclick="setMode('ce')">概念礼装</button>
+        </div>
+
+        {% block header %}{% endblock %}
+        <div class="filter-section">
+            <div class="filter-row">
+                <div class="filter-group" style="flex: 1; min-width: 200px;">
+                    <label>キーワード検索</label>
+                    <input type="text" id="search-input" placeholder="サーヴァント名を入力...">
+                </div>
+                {% block owned_filter %}
+                <div class="filter-group">
+                    <label>表示設定</label>
+                    <div class="btn-toggle-group" id="owned-filter">
+                        <button class="btn-toggle active" data-val="all">すべて</button>
+                        <button class="btn-toggle" data-val="owned">所持済み</button>
+                        <button class="btn-toggle" data-val="not-owned">未所持</button>
+                    </div>
+                </div>
+                {% endblock %}
+            </div>
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label>クラス</label>
+                    <div class="btn-toggle-group" id="class-filter">
+                        <button class="btn-toggle active" data-val="all"><span>ALL</span></button>
+                        <button class="btn-toggle" data-val="saber"><img
+                                src="https://static.atlasacademy.io/JP/ClassIcons/class3_1.png"
+                                alt=""><span>セイバー</span></button>
+                        <button class="btn-toggle" data-val="archer"><img
+                                src="https://static.atlasacademy.io/JP/ClassIcons/class3_2.png"
+                                alt=""><span>アーチャー</span></button>
+                        <button class="btn-toggle" data-val="lancer"><img
+                                src="https://static.atlasacademy.io/JP/ClassIcons/class3_3.png"
+                                alt=""><span>ランサー</span></button>
+                        <button class="btn-toggle" data-val="rider"><img
+                                src="https://static.atlasacademy.io/JP/ClassIcons/class3_4.png"
+                                alt=""><span>ライダー</span></button>
+                        <button class="btn-toggle" data-val="caster"><img
+                                src="https://static.atlasacademy.io/JP/ClassIcons/class3_5.png"
+                                alt=""><span>キャスター</span></button>
+                        <button class="btn-toggle" data-val="assassin"><img
+                                src="https://static.atlasacademy.io/JP/ClassIcons/class3_6.png"
+                                alt=""><span>アサシン</span></button>
+                        <button class="btn-toggle" data-val="berserker"><img
+                                src="https://static.atlasacademy.io/JP/ClassIcons/class3_7.png"
+                                alt=""><span>バーサーカー</span></button>
+                        <button class="btn-toggle" data-val="shielder"><img
+                                src="https://static.atlasacademy.io/JP/ClassIcons/class3_8.png"
+                                alt=""><span>シールダー</span></button>
+                        <button class="btn-toggle" data-val="ruler"><img
+                                src="https://static.atlasacademy.io/JP/ClassIcons/class3_9.png"
+                                alt=""><span>ルーラー</span></button>
+                        <button class="btn-toggle" data-val="avenger"><img
+                                src="https://static.atlasacademy.io/JP/ClassIcons/class3_11.png"
+                                alt=""><span>アヴェンジャー</span></button>
+                        <button class="btn-toggle" data-val="alterego"><img
+                                src="https://static.atlasacademy.io/JP/ClassIcons/class3_10.png"
+                                alt=""><span>アルターエゴ</span></button>
+                        <button class="btn-toggle" data-val="mooncancer"><img
+                                src="https://static.atlasacademy.io/JP/ClassIcons/class3_23.png"
+                                alt=""><span>ムーンキャンサー</span></button>
+                        <button class="btn-toggle" data-val="foreigner"><img
+                                src="https://static.atlasacademy.io/JP/ClassIcons/class3_25.png"
+                                alt=""><span>フォーリナー</span></button>
+                        <button class="btn-toggle" data-val="pretender"><img
+                                src="https://static.atlasacademy.io/JP/ClassIcons/class3_28.png"
+                                alt=""><span>プリテンダー</span></button>
+                        <button class="btn-toggle" data-val="beast"><img
+                                src="https://static.atlasacademy.io/JP/ClassIcons/class3_33.png"
+                                alt=""><span>ビースト</span></button>
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label>レアリティ</label>
+                    <div class="btn-toggle-group" id="rarity-filter">
+                        <button class="btn-toggle active" data-val="all">ALL</button>
+                        <button class="btn-toggle" data-val="5">★5</button>
+                        <button class="btn-toggle" data-val="4">★4</button>
+                        <button class="btn-toggle" data-val="3-1">★3以下</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="loading" class="loading">データを読み込み中...</div>
+        {% block content %}{% endblock %}
+    </div>
+
+    <footer class="main-footer">
+        <div class="footer-container">
+            <p>&copy; 2026 Strategy HUB / FGO</p>
+            <p class="disclaimer">本サイトは個人が**私的利用**を目的として制作・運用しているプロジェクトであり（学習目的を兼ねる）、公式とは一切関係ありません。</p>
+            <p style="margin-top: 8px; font-size: 0.8rem;">
+                <a href="/contact" style="color: var(--text-dim); text-decoration: underline;">お問い合わせ</a>
+            </p>
+        </div>
+    </footer>
+
+    {% block footer %}{% endblock %}
+
+    <!--詳細モーダル-->
+    <div id="detail-modal">
+        <div class="modal-content" id="modal-content">
+            <!-- JSで挿入 -->
+        </div>
+    </div>
+
+    <script>
+        let allServantsMeta = [];
+        let allCEsMeta = [];
+        let allMysticCodesMeta = [];
+        let ownedIds = new Set();
+        let classData = {};
+        let viewMode = 'servant'; // 'servant' or 'ce'
+
+        // --- 共通定数とユーティリティ (app.jsから統合) ---
+        const sCostMap = { 5: 16, 4: 12, 3: 7, 2: 4, 1: 3, 0: 0 }; // レアリティごとのコスト
+        const PLAYABLE_CLASSES = [
+            "saber", "archer", "lancer", "rider", "caster", "assassin", "berserker",
+            "shielder", "ruler", "avenger", "alterego", "mooncancer", "foreigner", "pretender",
+            "beast", "beasteresh", "unbeastolgamarie", "unknown"
+        ];
+        const BEAST_CLASSES = ["beast", "beasteresh", "unbeastolgamarie"]; // ドラコー、水着エレシュキガル、U-オルガマリー
+
+        // スキルレベル(1-10)を順番に切り替える
+        function cycleSkill(val) {
+            return val >= 10 ? 1 : val + 1;
+        }
+
+        // 宝具レベル(1-5)を順番に切り替える
+        function cycleNP(val) {
+            return val >= 5 ? 1 : val + 1;
+        }
+
+        // --- 基本初期化ロジック ---
+        async function initBase() {
+            try {
+                // サーヴァント
+                const response = await fetch('https://api.atlasacademy.io/export/JP/basic_servant.json');
+                const basicServants = await response.json();
+                let expandedServants = [];
+                basicServants.forEach(s => {
+                    const lowClass = s.className ? s.className.toLowerCase() : 'unknown';
+                    // プレイアブルな通常クラス以外を除外
+                    if (!PLAYABLE_CLASSES.includes(lowClass)) return;
+
+                    s.rawClass = lowClass;
+                    expandedServants.push(s);
+                    // マシュの別形態を仮想キャラとして追加
+                    if (s.id === 800100) {
+                        expandedServants.push({
+                            id: 800140,
+                            name: "マシュ (オルテナウス)",
+                            className: s.className,
+                            rawClass: s.rawClass,
+                            rarity: 4,
+                            face: "https://static.atlasacademy.io/JP/Faces/f_8001400.png",
+                            attribute: s.attribute
+                        });
+                        expandedServants.push({
+                            id: 800190,
+                            name: "マシュ (パラディーン)",
+                            className: s.className,
+                            rawClass: s.rawClass,
+                            rarity: 4,
+                            face: "https://static.atlasacademy.io/JP/Faces/f_8001900.png",
+                            attribute: s.attribute
+                        });
+                    }
+                });
+                allServantsMeta = expandedServants;
+
+                // 概念礼装
+                const ceResponse = await fetch('https://api.atlasacademy.io/export/JP/basic_equip.json');
+                allCEsMeta = await ceResponse.json();
+
+                // 魔術礼装 (詳細情報を含む nice データを使用)
+                const mcResponse = await fetch('https://api.atlasacademy.io/export/JP/nice_mystic_code.json');
+                allMysticCodesMeta = await mcResponse.json();
+
+                {% if g.user %}
+                const ownedResponse = await fetch('/api/owned');
+                const ownedData = await ownedResponse.json();
+                ownedIds = new Set(ownedData);
+                {% else %}
+                ownedIds = new Set();
+                {% endif %}
+
+                const loading = document.getElementById('loading');
+                if (loading) loading.style.display = 'none';
+
+                // ナビゲーションのアクティブ化
+                const path = window.location.pathname;
+                if (path === '/') document.getElementById('nav-index').classList.add('active');
+                if (path === '/parties') document.getElementById('nav-parties').classList.add('active');
+                if (path === '/registration') {
+                    document.getElementById('nav-registration').classList.add('active');
+                    // 所持登録画面では常にサーヴァントモード（タブを隠す）
+                    const tabs = document.querySelector('.mode-tabs');
+                    if (tabs) tabs.style.display = 'none';
+                }
+
+                if (typeof onInit === 'function') await onInit();
+            } catch (e) {
+                console.error(e);
+                const loading = document.getElementById('loading');
+                if (loading) loading.innerText = 'エラーが発生しました。';
+            }
+        }
+
+        function setMode(mode) {
+            viewMode = mode;
+            document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(`tab-${mode}`).classList.add('active');
+
+            // 礼装モード時はフィルタの一部を隠す
+            const classFilterGroup = document.getElementById('class-filter').closest('.filter-group');
+            const ownedFilterGroup = document.getElementById('owned-filter') ? document.getElementById('owned-filter').closest('.filter-group') : null;
+
+            if (mode === 'ce') {
+                classFilterGroup.style.display = 'none';
+                if (ownedFilterGroup) ownedFilterGroup.style.display = 'none';
+            } else {
+                classFilterGroup.style.display = 'block';
+                if (ownedFilterGroup) ownedFilterGroup.style.display = 'block';
+            }
+
+            if (typeof renderGrid === 'function') renderGrid();
+            if (typeof updateFocusUI === 'function') updateFocusUI();
+        }
+
+        async function showDetail(id) {
+            const modal = document.getElementById('detail-modal');
+            const content = document.getElementById('modal-content');
+            modal.style.display = 'flex';
+
+            const meta = allServantsMeta.find(m => m.id === id);
+            if (meta) {
+                // サーヴァント詳細
+                let fetchId = id;
+                if (id === 800140 || id === 800190) fetchId = 800100;
+
+                content.innerHTML = '<div class="loading">APIから詳細情報を取得中...</div>';
+                let details;
+                try {
+                    const res = await fetch(`https://api.atlasacademy.io/nice/JP/servant/${fetchId}`);
+                    details = await res.json();
+                } catch (e) {
+                    content.innerHTML = '<div style="padding:20px; text-align:center;">データ取得エラー</div>';
+                    return;
+                }
+
+                if (id === 800100) {
+                    const targetSkillIds = [236000, 2000, 133000]; // 通常マシュ（最新）
+                    const targetNpIds = [800104];
+                    details.skills = details.skills ? details.skills.filter(sk => targetSkillIds.includes(sk.id)) : [];
+                    details.noblePhantasms = details.noblePhantasms ? details.noblePhantasms.filter(np => targetNpIds.includes(np.id)) : [];
+                } else if (id === 800140) {
+                    const targetSkillIds = [744450, 460250, 2162350]; // オルテナウス (ブラックバレル, アマルガム, パラドクス)
+                    const targetNpIds = [800106, 800196];
+                    details.skills = details.skills ? details.skills.filter(sk => targetSkillIds.includes(sk.id)) : [];
+                    details.noblePhantasms = details.noblePhantasms ? details.noblePhantasms.filter(np => targetNpIds.includes(np.id)) : [];
+                } else if (id === 800190) {
+                    // パラディーン (誉れ高き..., 時に煙る..., 奮い断つ...)
+                    // 「時を測る紫弾の薪 B」は特殊スキルのため、リストにない場合は追加取得
+                    if (!details.skills.find(sk => sk.id === 2477450)) {
+                        try {
+                            const extraRes = await fetch('https://api.atlasacademy.io/nice/JP/skill/2477450');
+                            const extraSkill = await extraRes.res ? await extraRes.json() : null; // fetch error check
+                            if (extraRes.ok) {
+                                const skillData = await extraRes.json();
+                                details.skills.push(skillData);
+                            }
+                        } catch (e) { console.error("Extra skill fetch failed", e); }
+                    }
+                    const targetSkillIds = [2476450, 970660, 2477450, 133550];
+                    const targetNpIds = [800107, 800108];
+                    details.skills = details.skills ? details.skills.filter(sk => targetSkillIds.includes(sk.id)) : [];
+                    // 並び順を整理
+                    details.skills.sort((a, b) => targetSkillIds.indexOf(a.id) - targetSkillIds.indexOf(b.id));
+                    details.noblePhantasms = details.noblePhantasms ? details.noblePhantasms.filter(np => targetNpIds.includes(np.id)) : [];
+                }
+
+                const attributeMap = { 'human': '人', 'sky': '天', 'earth': '地', 'star': '星', 'beast': '獣' };
+                const displayAttribute = attributeMap[details.attribute] || details.attribute;
+                const classMap = {
+                    'saber': 'セイバー', 'archer': 'アーチャー', 'lancer': 'ランサー',
+                    'rider': 'ライダー', 'caster': 'キャスター', 'assassin': 'アサシン',
+                    'berserker': 'バーサーカー', 'shielder': 'シールダー', 'ruler': 'ルーラー',
+                    'avenger': 'アヴェンジャー', 'alterego': 'アルターエゴ', 'mooncancer': 'ムーンキャンサー',
+                    'foreigner': 'フォーリナー', 'pretender': 'プリテンダー', 'beast': 'ビースト',
+                    'beasteresh': 'ビースト', 'unbeastolgamarie': 'ビースト'
+                };
+                const displayClassName = classMap[meta.className.toLowerCase()] || meta.className;
+
+                // 宝具パース
+                const npHtml = details.noblePhantasms ? details.noblePhantasms.map(np => {
+                    let targetType = '補助';
+                    if (np.functions) {
+                        np.functions.forEach(f => {
+                            if (f.funcType && f.funcType.startsWith('damageNp')) {
+                                targetType = f.funcTargetType === 'enemyAll' ? '全体' : '単体';
+                            }
+                        });
+                    }
+
+                    // カード種別の変換（数値ID "1", "2" 等を文字列に変換）
+                    const cardMap = { "1": "arts", "2": "buster", "3": "quick", "4": "extra" };
+                    const cardName = cardMap[String(np.card)] || String(np.card).toLowerCase();
+                    const cardClass = `np-card-${cardName}`;
+                    const cardLabel = `<span class="${cardClass}">${cardName.toUpperCase()}</span>`;
+
+                    return `
+                        <div class="info-item" style="margin-bottom:10px">
+                            <strong>${np.name}</strong> (${cardLabel} / ${targetType})
+                            <p style="font-size:0.85rem; margin-top:5px; color:#e2e8f0">${np.detail}</p>
+                        </div>
+                    `;
+                }).join('') : '';
+
+                // スキルパース
+                const skillHtml = details.skills ? details.skills.map(sk => `
+                    <div class="info-item" style="margin-bottom:10px">
+                        <strong>${sk.name}</strong> <span style="color:var(--text-dim); font-size:0.8rem; margin-left:10px">CT: ${sk.coolDown ? sk.coolDown[0] : '-'}</span>
+                        <p style="font-size:0.85rem; margin-top:5px; color:#e2e8f0">${sk.detail}</p>
+                    </div>
+                `).join('') : '';
+
+                content.innerHTML = `
+                    <span class="close-modal" onclick="document.getElementById('detail-modal').style.display='none'">&times;</span>
+                    <div class="servant-detail-header">
+                        <img src="${meta.face}" class="detail-img">
+                        <div class="detail-names">
+                            <h2>${meta.name}</h2>
+                            <p style="color:var(--text-dim)">${displayClassName} / ★${meta.rarity}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="info-grid">
+                        <div class="info-item"><span class="info-label">最大ATK</span>${details.atkMax ? details.atkMax.toLocaleString() : '---'}</div>
+                        <div class="info-item"><span class="info-label">最大HP</span>${details.hpMax ? details.hpMax.toLocaleString() : '---'}</div>
+                        <div class="info-item"><span class="info-label">属性</span>${displayAttribute}</div>
+                    </div>
+
+                    <h3 class="section-title">宝具</h3>
+                    ${npHtml}
+
+                    <h3 class="section-title">保有スキル</h3>
+                    ${skillHtml}
+                    
+                    ${window.location.pathname !== '/registration' ? `<button class="save-btn" style="width:100%; padding:15px; margin-top:20px" onclick="addToPartyById(${id})">パーティに追加</button>` : ''}
+                `;
+            } else {
+                // 礼装詳細
+                const ce = allCEsMeta.find(c => c.id === id);
+                if (!ce) { content.innerHTML = 'データなし'; return; }
+
+                content.innerHTML = '<div class="loading">APIから詳細情報を取得中...</div>';
+                let ceDetailText = '';
+                try {
+                    const res = await fetch(`https://api.atlasacademy.io/nice/JP/equip/${id}`);
+                    const ceData = await res.json();
+                    ceDetailText = ceData.skills && ceData.skills.length > 0 ? ceData.skills[0].detail : (ceData.detail || '');
+                } catch (e) {
+                    ceDetailText = '設定詳細が取得できませんでした';
+                }
+
+                content.innerHTML = `
+                    <span class="close-modal" onclick="document.getElementById('detail-modal').style.display='none'">&times;</span>
+                    <div class="servant-detail-header">
+                        <img src="${ce.face}" class="detail-img">
+                        <div class="detail-names">
+                            <h2>${ce.name}</h2>
+                            <p style="color:var(--text-dim)">概念礼装 / ★${ce.rarity} / Cost:${ce.cost}</p>
+                        </div>
+                    </div>
+                    <div class="info-item" style="margin-top:20px">
+                        <p style="font-size:0.95rem; color:#e2e8f0; line-height:1.6">${ceDetailText}</p>
+                    </div>
+                    ${window.location.pathname !== '/registration' ? `<button class="save-btn" style="width:100%; padding:15px; margin-top:20px" onclick="addToPartyById(${id})">編成にセット</button>` : ''}
+                `;
+            }
+        }
+
+        function setupFilters(renderFn) {
+            document.getElementById('search-input').oninput = renderFn;
+            [
+                document.getElementById('owned-filter'),
+                document.getElementById('rarity-filter'),
+                document.getElementById('class-filter')
+            ].forEach(group => {
+                if (!group) return;
+                group.querySelectorAll('.btn-toggle').forEach(btn => {
+                    btn.onclick = () => {
+                        group.querySelectorAll('.btn-toggle').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        renderFn();
+                    };
+                });
+            });
+        }
+
+        // 詳細モーダルのボタン用
+        function addToPartyById(id) {
+            if (typeof addToParty !== 'function') return;
+            const item = (viewMode === 'servant')
+                ? allServantsMeta.find(m => m.id === id)
+                : allCEsMeta.find(c => c.id === id);
+
+            if (item) {
+                addToParty(item);
+                document.getElementById('detail-modal').style.display = 'none';
+            }
+        }
+
+        window.onclick = (e) => {
+            if (e.target == document.getElementById('detail-modal')) document.getElementById('detail-modal').style.display = 'none';
+        };
+
+        // DOMContentLoaded後に初期化
+        document.addEventListener('DOMContentLoaded', initBase);
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>
