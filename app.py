@@ -54,15 +54,21 @@ def load_logged_in_user():
 def init_db():
     """データベースの初期化を行います。テーブルが存在しない場合は最新の構造で作成します。"""
     conn = get_db_connection()
-    # ユーザーテーブル
+    # ユーザーテーブル (emailカラムを含む最新スキーマ)
     conn.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
-            is_admin BOOLEAN DEFAULT 0
+            is_admin BOOLEAN DEFAULT 0,
+            email TEXT
         )
     """)
+    # --- マイグレーション: 既存DBにemailカラムがなければ追加 ---
+    existing_cols = [row[1] for row in conn.execute("PRAGMA table_info(users)").fetchall()]
+    if "email" not in existing_cols:
+        conn.execute("ALTER TABLE users ADD COLUMN email TEXT")
+        print("[migration] users テーブルに email カラムを追加しました。")
     # 所持サーヴァントテーブル
     conn.execute("""
         CREATE TABLE IF NOT EXISTS owned_servants (
